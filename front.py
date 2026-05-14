@@ -5,7 +5,7 @@ from torchvision import transforms
 
 st.title('Fashion MNIST Predictor')
 
-model = torch.load('fashion_mnist.pth', map_location='cpu')
+model = torch.load('model_fashion_nur.pth', map_location='cpu')
 model.eval()
 
 classes = [
