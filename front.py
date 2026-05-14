@@ -1,66 +1,36 @@
 import streamlit as st
-import torch
-import torch.nn as nn
+import requests
 from PIL import Image
-from torchvision import transforms
 
 st.title('Fashion MNIST Predictor')
 
-# ---------------- MODEL ----------------
-class Net(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.model = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(28 * 28, 128),
-            nn.ReLU(),
-            nn.Linear(128, 10)
-        )
+uploaded_file = st.file_uploader(
+    'загрузи фото',
+    type=['png', 'jpg', 'jpeg']
+)
 
-    def forward(self, x):
-        return self.model(x)
-
-# ---------------- LOAD MODEL ----------------
-path = 'model_fashion_nur.pth'
-
-checkpoint = torch.load(path, map_location='cpu')
-
-# эгер state_dict болсо
-if isinstance(checkpoint, dict):
-    model = Net()
-    model.load_state_dict(checkpoint)
-else:
-    model = checkpoint
-
-model.eval()
-
-# ---------------- CLASSES ----------------
-classes = [
-    'T-shirt/top','Trouser','Pullover','Dress','Coat',
-    'Sandal','Shirt','Sneaker','Bag','Ankle boot'
-]
-
-# ---------------- TRANSFORM ----------------
-transform = transforms.Compose([
-    transforms.Grayscale(),
-    transforms.Resize((28, 28)),
-    transforms.ToTensor()
-])
-
-# ---------------- UI ----------------
-uploaded_file = st.file_uploader('загрузи фото', type=['png','jpg','jpeg'])
-
-if uploaded_file:
+if uploaded_file is not None:
 
     image = Image.open(uploaded_file)
-    st.image(image, width=250)
+
+    st.image(image,  width=250)
 
     if st.button('Predict'):
 
-        img = transform(image).unsqueeze(0)
+        files = {
+            'file': uploaded_file.getvalue()
+        }
 
-        with torch.no_grad():
-            output = model(img)
-            pred = output.argmax(dim=1).item()
+        response = requests.post(
+            'http://127.0.0.1:8001/predict/',
+            files=files
+        )
 
-        st.success(f'Prediction: {classes[pred]}')
+        if response.status_code == 200:
+
+            result = response.json()
+
+            st.success(f"Prediction: {result['Answer']}")
+
+        else:
+            st.error('API error')
